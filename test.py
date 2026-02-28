@@ -50,6 +50,26 @@ class TestBitespeedAPI(unittest.TestCase):
         self.assertEqual(data['secondaryContactIds'][0], initial_primary_id+1)
         self.assertIn("111", data['phoneNumbers'])
         self.assertIn("222", data['phoneNumbers'])
+        
+    def test_03_primary_to_secondary_merge(self):
+        """Scenario: Merging two existing primary accounts. Older should prevail."""
+        # create primary A
+        res_a = requests.post(self.BASE_URL, json={"email": "george@u.edu", "phoneNumber": "999"})
+        id_a = res_a.json()['contact']['primaryContatctId']
+        
+        # create primary B
+        res_b = requests.post(self.BASE_URL, json={"email": "biff@u.edu", "phoneNumber": "888"})
+        id_b = res_b.json()['contact']['primaryContatctId']
+        
+        # merge request
+        payload = {"email": "george@u.edu", "phoneNumber": "888"}
+        response = requests.post(self.BASE_URL, json=payload)
+        
+        data = response.json()['contact']
+        # the older ID (id_a) must be the primaryContatctId
+        self.assertEqual(data['primaryContatctId'], id_a)
+        # the newer ID (id_b) should now be in the secondary list
+        self.assertIn(id_b, data['secondaryContactIds'])
 
 if __name__ == '__main__':
     unittest.main()
